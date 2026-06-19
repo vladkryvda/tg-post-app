@@ -1,5 +1,7 @@
-import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
+
+// No need to import 'node-fetch' anymore. 
+// Node.js 18+ has a built-in global fetch API.
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
@@ -30,6 +32,8 @@ export default async function handler(req, res) {
     try {
         // 2. Надсилаємо в Telegram
         const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        
+        // Using global fetch here
         const response = await fetch(telegramUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
