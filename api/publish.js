@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-// No need to import 'node-fetch' anymore. 
-// Node.js 18+ has a built-in global fetch API.
-
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 export default async function handler(req, res) {
@@ -10,7 +7,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Метод не дозволений' });
     }
 
-    // 1. Перевірка токена користувача
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
         return res.status(401).json({ error: 'Немає токена авторизації' });
@@ -30,10 +26,7 @@ export default async function handler(req, res) {
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
     try {
-        // 2. Надсилаємо в Telegram
         const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-        
-        // Using global fetch here
         const response = await fetch(telegramUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
