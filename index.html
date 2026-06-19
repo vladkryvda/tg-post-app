@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Web Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Підключення Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
+        body { background-color: #e7ebf0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        
+        /* Екран входу */
+        .auth-container { display: flex; flex-direction: column; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 380px; text-align: center; }
+        .auth-container h2 { margin-bottom: 20px; font-weight: 500; color: #222; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #dadada; border-radius: 8px; outline: none; font-size: 15px; }
+        .auth-btn { background-color: #5288c1; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 500; }
+        .auth-btn:hover { background-color: #4371a3; }
+
+        /* Контейнер чату */
+        .chat-container { display: none; width: 100%; max-width: 500px; height: 100vh; background: #f4f4f5; flex-direction: column; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08); position: relative; }
+        @media (min-width: 768px) { .chat-container { height: 90vh; border-radius: 12px; overflow: hidden; } }
+
+        .chat-header { background-color: #ffffff; padding: 10px 16px; display: flex; align-items: center; border-bottom: 1px solid #e5e5e5; height: 60px; }
+        .avatar { width: 42px; height: 42px; background-color: #50b6f3; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; margin-right: 12px; }
+        .chat-info { flex-grow: 1; }
+        .chat-title { font-size: 16px; font-weight: 500; color: #000000; }
+        .chat-status { font-size: 13px; color: #707579; margin-top: 2px; }
+        .logout-btn { background: none; border: none; color: #e53935; cursor: pointer; font-size: 14px; font-weight: 500; }
+
+        .chat-messages { flex-grow: 1; padding: 16px; overflow-y: auto; background-color: #f4f4f5; background-image: radial-gradient(#dfe3e9 1px, transparent 0); background-size: 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+        .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 15px; line-height: 1.4; position: relative; word-wrap: break-word; align-self: flex-start; background-color: #ffffff; color: #000000; box-shadow: 0 1px 2px rgba(0,0,0,0.07); }
+        .message-bubble.my-message { align-self: flex-end; background-color: #eeffde; }
+        .message-time { font-size: 10px; color: #a0acb6; float: right; margin-top: 4px; margin-left: 8px; }
+
+        .chat-input-area { background-color: #ffffff; padding: 10px 12px; border-top: 1px solid #e5e5e5; display: flex; gap: 8px; }
+        .message-textarea { flex-grow: 1; padding: 10px 12px; border: 1px solid #dadada; border-radius: 8px; font-size: 15px; outline: none; resize: none; height: 40px; max-height: 120px; }
+        .send-btn { background-color: #5288c1; color: white; border: none; border-radius: 8px; padding: 0 20px; cursor: pointer; font-weight: 500; font-size: 14px; }
+        .send-btn:disabled { background-color: #b9cfe3; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<!-- Екран авторизації -->
+<div class="auth-container" id="authScreen">
+    <h2>Вхід до консолі</h2>
+    <input type="email" id="email" class="auth-input" placeholder="Електронна пошта" required>
+    <input type="password" id="password" class="auth-input" placeholder="Пароль" required>
+    <button class="auth-btn" onclick="handleLogin()">Увійти</button>
+</div>
+
+<!-- Контейнер чату (показується після входу) -->
+<div class="chat-container" id="chatScreen">
+    <div class="chat-header">
+        <div class="avatar">СП</div>
+        <div class="chat-info">
+            <div class="chat-title">Моя Спина & Постава</div>
+            <div class="chat-status">онлайн-консоль</div>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">Вийти</button>
+    </div>
+
+    <div class="chat-messages" id="messagesContainer">
+        <!-- Повідомлення завантажаться автоматично -->
+    </div>
+
+    <div class="chat-input-area">
+        <textarea class="message-textarea" id="messageText" placeholder="Написати повідомлення..." required></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Надіслати</button>
+    </div>
+</div>
+
+<script>
+    // Ініціалізація Supabase (ВСТАВТЕ СВОЇ КЛЮЧІ)
+    const SUPABASE_URL = "ВАШ_SUPABASE_URL"; 
+    const SUPABASE_ANON_KEY = "ВАШ_SUPABASE_ANON_KEY";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let session = null;
+
+    // Перевірка сесії при завантаженні сторінки
+    window.onload = async () => {
+        const { data } = await supabase.auth.getSession();
+        session = data.session;
+        toggleScreens();
+        if (session) {
+            loadChatHistory();
+        }
+    };
+
+    function toggleScreens() {
+        if (session) {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('chatScreen').style.display = 'flex';
+        } else {
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('chatScreen').style.display = 'none';
+        }
+    }
+
+    // Логіка входу
+    async function handleLogin() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            alert("Помилка авторизації: " + error.message);
+        } else {
+            session = data.session;
+            toggleScreens();
+            loadChatHistory();
+        }
+    }
+
+    // Логіка виходу
+    async function handleLogout() {
+        await supabase.auth.signOut();
+        session = null;
+        toggleScreens();
+        document.getElementById('messagesContainer').innerHTML = '';
+    }
+
+    // Завантаження реальної історії повідомлень (через парсер бекенду)
+    async function loadChatHistory() {
+        const messagesContainer = document.getElementById('messagesContainer');
+        messagesContainer.innerHTML = '<div style="text-align:center;color:#707579;padding:20px;">Завантаження історії...</div>';
+
+        try {
+            const response = await fetch('/api/history', {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            const data = await response.json();
+
+            if (response.ok && Array.isArray(data)) {
+                messagesContainer.innerHTML = '';
+                if (data.length === 0) {
+                    messagesContainer.innerHTML = '<div style="text-align:center;color:#707579;padding:20px;">Повідомлень немає</div>';
+                }
+                data.forEach(msg => {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'message-bubble';
+                    bubble.innerHTML = `${msg.text.replace(/\n/g, '<br>')} <div class="message-time">${msg.time}</div>`;
+                    messagesContainer.appendChild(bubble);
+                });
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } else {
+                messagesContainer.innerHTML = '<div style="text-align:center;color:#e53935;padding:20px;">Не вдалося завантажити історію</div>';
+            }
+        } catch (err) {
+            messagesContainer.innerHTML = '<div style="text-align:center;color:#e53935;padding:20px;">Помилка підключення до сервера історії</div>';
+        }
+    }
+
+    // Відправка повідомлення
+    async function sendMessage() {
+        const textInput = document.getElementById('messageText');
+        const text = textInput.value.trim();
+        if (!text) return;
+
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/publish', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}` // Надсилаємо токен сесії
+                },
+                body: JSON.stringify({ text })
+            });
+
+            if (response.ok) {
+                textInput.value = '';
+                // Перезавантажуємо чат, щоб побачити свій пост
+                setTimeout(loadChatHistory, 1000);
+            } else {
+                const err = await response.json();
+                alert("Помилка відправки: " + (err.error || "Невідома помилка"));
+            }
+        } catch (e) {
+            alert("Помилка мережі при відправці.");
+        } finally {
+            sendBtn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
