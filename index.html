@@ -11,6 +11,7 @@
             padding: 0;
         }
 
+        /* Стилі для світлої теми (за замовчуванням) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #ffffff;
@@ -21,12 +22,13 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         main {
             width: 100%;
             max-width: 720px;
-            margin-top: 10px; 
+            margin-top: 40px; 
         }
 
         .title-input {
@@ -46,7 +48,7 @@
 
         .editor {
             width: 100%;
-            min-height: 350px;
+            min-height: 400px;
             font-size: 18px;
             border: none;
             outline: none;
@@ -63,6 +65,21 @@
             cursor: text;
         }
 
+        /* Стильний непомітний лічильник зліва внизу */
+        .counter {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            font-size: 12px;
+            color: #b0b0b0;
+            font-weight: 400;
+            user-select: none;
+            pointer-events: none;
+            letter-spacing: 0.3px;
+            transition: color 0.3s ease;
+        }
+
+        /* Елементи керування справа внизу */
         .bottom-controls {
             position: fixed;
             bottom: 40px;
@@ -108,6 +125,46 @@
             cursor: not-allowed;
             transform: none;
         }
+
+        /* АВТОМАТИЧНА ТЕМНА ТЕМА (стиль Notion Dark) */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #191919;
+                color: #ebebeb;
+            }
+
+            .title-input {
+                color: #ebebeb;
+            }
+
+            .title-input::placeholder {
+                color: #373737;
+            }
+
+            .editor {
+                color: #e3e3e3;
+            }
+
+            .editor:empty:before {
+                color: #555555;
+            }
+
+            .counter {
+                color: #555555;
+            }
+
+            .publish-btn {
+                color: #a0a0a0;
+            }
+
+            .publish-btn:hover {
+                color: #ebebeb;
+            }
+
+            .status-message {
+                color: #777777;
+            }
+        }
     </style>
 </head>
 <body>
@@ -117,6 +174,10 @@
         <div id="post-body" class="editor" contenteditable="true" data-placeholder="Почніть писати свою історію тут..."></div>
     </main>
 
+    <!-- Лічильник зліва -->
+    <div id="counter" class="counter">0 слів</div>
+
+    <!-- Кнопка відправки справа -->
     <div class="bottom-controls" id="controls-area">
         <span id="status" class="status-message">Надсилання...</span>
         <button id="publish-btn" class="publish-btn" onclick="publishPost()" aria-label="Опублікувати">
@@ -132,71 +193,151 @@
         const bodyDiv = document.getElementById('post-body');
         const publishBtn = document.getElementById('publish-btn');
         const statusText = document.getElementById('status');
+        const counterText = document.getElementById('counter');
 
-        // === ПРАЦЯ З LOCALSTORAGE (Збереження чернетки) ===
-        
-        // Відновлення тексту при завантаженні сторінки
+        // === LOCALSTORAGE & СТАРТ ===
         document.addEventListener('DOMContentLoaded', () => {
             const savedTitle = localStorage.getItem('draft_title');
             const savedBody = localStorage.getItem('draft_body');
 
-            if (savedTitle) {
-                titleInput.value = savedTitle;
-            }
-            if (savedBody) {
-                bodyDiv.innerHTML = savedBody;
-            }
+            if (savedTitle) titleInput.value = savedTitle;
+            if (savedBody) bodyDiv.innerHTML = savedBody;
+
+            updateCounter();
         });
 
-        // Відстеження введення тексту та автоматичне збереження
         titleInput.addEventListener('input', () => {
             localStorage.setItem('draft_title', titleInput.value);
         });
 
         bodyDiv.addEventListener('input', () => {
             localStorage.setItem('draft_body', bodyDiv.innerHTML);
+            updateCounter();
         });
 
-        // Очищення збереженої чернетки після успішної відправки
         function clearDraft() {
             localStorage.removeItem('draft_title');
             localStorage.removeItem('draft_body');
             titleInput.value = '';
             bodyDiv.innerHTML = '';
+            updateCounter();
         }
 
-        // ==================================================
+        // === ЛІЧИЛЬНИК СЛІВ ТА ЧАСУ ЧИТАННЯ ===
+        function updateCounter() {
+            const text = bodyDiv.innerText.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const readingTime = Math.max(1, Math.ceil(words / 180)); // ~180 слів/хв
 
-        async function publishPost() {
-            const title = titleInput.value.trim();
-            const body = bodyDiv.innerText.trim();
-
-            if (!title && !body) {
+            if (words === 0) {
+                counterText.innerText = '0 слів';
                 return;
             }
+
+            // Правильне відмінювання українською мовою
+            let wordString = 'слів';
+            const lastDigit = words % 10;
+            const lastTwoDigits = words % 100;
+
+            if (lastDigit === 1 && lastTwoDigits !== 11) {
+                wordString = 'слово';
+            } else if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 10 || lastTwoDigits >= 20)) {
+                wordString = 'слова';
+            }
+
+            counterText.innerText = `${words} ${wordString} · ~${readingTime} хв читання`;
+        }
+
+        // === ГАРЯЧІ КЛАВІШІ ДЛЯ ФОРМАТУВАННЯ ===
+        bodyDiv.addEventListener('keydown', (e) => {
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+            if (modifier && e.key.toLowerCase() === 'b') {
+                e.preventDefault();
+                document.execCommand('bold', false, null);
+            }
+            if (modifier && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                document.execCommand('italic', false, null);
+            }
+        });
+
+        // === КОНВЕРТАЦІЯ ДЛЯ TELEGRAM HTML ===
+        // Функція перетворює HTML-код редактора на чисту розмітку, яку розуміє Telegram
+        function convertToTelegramHTML(title, bodyHTML) {
+            const temp = document.createElement('div');
+            temp.innerHTML = bodyHTML;
+
+            function serialize(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.nodeValue
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return '';
+                }
+
+                const tagName = node.tagName.toLowerCase();
+                const childrenHtml = Array.from(node.childNodes).map(serialize).join('');
+
+                if (tagName === 'b' || tagName === 'strong') {
+                    return `<b>${childrenHtml}</b>`;
+                }
+                if (tagName === 'i' || tagName === 'em') {
+                    return `<i>${childrenHtml}</i>`;
+                }
+                if (tagName === 'br') {
+                    return '\n';
+                }
+                if (tagName === 'div' || tagName === 'p') {
+                    return `\n${childrenHtml}`;
+                }
+                return childrenHtml;
+            }
+
+            let bodyFormatted = Array.from(temp.childNodes).map(serialize).join('');
+            bodyFormatted = bodyFormatted.replace(/\n{3,}/g, '\n\n').trim();
+
+            const escapeHTML = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            let finalMessage = '';
+            if (title.trim()) {
+                finalMessage += `<b>${escapeHTML(title.trim())}</b>\n\n`;
+            }
+            finalMessage += bodyFormatted;
+
+            return finalMessage.trim();
+        }
+
+        // === ПУБЛІКАЦІЯ ===
+        async function publishPost() {
+            const title = titleInput.value.trim();
+            const bodyHTML = bodyDiv.innerHTML;
+
+            // Перевіряємо, чи є хоч якийсь текст
+            if (!title && !bodyDiv.innerText.trim()) return;
 
             publishBtn.disabled = true;
             statusText.innerText = 'Надсилання...';
             statusText.classList.add('show');
 
+            // Створюємо правильний HTML для Telegram на клієнті
+            const formattedText = convertToTelegramHTML(title, bodyHTML);
+
             try {
                 const response = await fetch('/api/publish', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: title,
-                        text: body
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ formattedText })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
                     statusText.innerText = 'Опубліковано';
-                    
-                    // Успішно відправлено - очищуємо чернетку
                     clearDraft();
                     
                     setTimeout(() => {
@@ -217,10 +358,9 @@
             }
         }
 
-        // Повноекранний режим на подвійний клік
+        // Повноекранний режим
         document.addEventListener('dblclick', function(event) {
             const controls = document.getElementById('controls-area');
-
             const isClickInsideInput = titleInput.contains(event.target) || event.target === titleInput;
             const isClickInsideBody = bodyDiv.contains(event.target) || event.target === bodyDiv;
             const isClickInsideControls = controls.contains(event.target) || event.target === controls;
@@ -233,7 +373,7 @@
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
-                    console.warn(`Не вдалося увімкнути повноекранний режим: ${err.message}`);
+                    console.warn(`Повноекранний режим недоступний: ${err.message}`);
                 });
             } else {
                 if (document.exitFullscreen) {
