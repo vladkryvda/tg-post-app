@@ -2,7 +2,9 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)">
     <title>Новий допис</title>
     <style>
         * {
@@ -11,18 +13,20 @@
             padding: 0;
         }
 
-        /* Стилі для світлої теми (за замовчуванням) */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        html, body, :fullscreen, ::backdrop {
             background-color: #ffffff;
             color: #222222;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.58;
-            padding: 20px 20px 0 20px;
+            padding: max(20px, env(safe-area-inset-top)) 20px 0 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         main {
@@ -65,7 +69,6 @@
             cursor: text;
         }
 
-        /* Стильний непомітний лічильник зліва внизу */
         .counter {
             position: fixed;
             bottom: 40px;
@@ -79,7 +82,6 @@
             transition: color 0.3s ease;
         }
 
-        /* Елементи керування справа внизу */
         .bottom-controls {
             position: fixed;
             bottom: 40px;
@@ -126,9 +128,8 @@
             transform: none;
         }
 
-        /* АВТОМАТИЧНА ТЕМНА ТЕМА (стиль Notion Dark) */
         @media (prefers-color-scheme: dark) {
-            body {
+            html, body, :fullscreen, ::backdrop {
                 background-color: #191919;
                 color: #ebebeb;
             }
@@ -174,10 +175,8 @@
         <div id="post-body" class="editor" contenteditable="true" data-placeholder="Почніть писати свою історію тут..."></div>
     </main>
 
-    <!-- Лічильник зліва -->
     <div id="counter" class="counter">0 слів</div>
 
-    <!-- Кнопка відправки справа -->
     <div class="bottom-controls" id="controls-area">
         <span id="status" class="status-message">Надсилання...</span>
         <button id="publish-btn" class="publish-btn" onclick="publishPost()" aria-label="Опублікувати">
@@ -195,7 +194,7 @@
         const statusText = document.getElementById('status');
         const counterText = document.getElementById('counter');
 
-        // === LOCALSTORAGE & СТАРТ ===
+        // === LOCALSTORAGE ===
         document.addEventListener('DOMContentLoaded', () => {
             const savedTitle = localStorage.getItem('draft_title');
             const savedBody = localStorage.getItem('draft_body');
@@ -223,18 +222,17 @@
             updateCounter();
         }
 
-        // === ЛІЧИЛЬНИК СЛІВ ТА ЧАСУ ЧИТАННЯ ===
+        // === ЛІЧИЛЬНИК ===
         function updateCounter() {
             const text = bodyDiv.innerText.trim();
             const words = text ? text.split(/\s+/).length : 0;
-            const readingTime = Math.max(1, Math.ceil(words / 180)); // ~180 слів/хв
+            const readingTime = Math.max(1, Math.ceil(words / 180));
 
             if (words === 0) {
                 counterText.innerText = '0 слів';
                 return;
             }
 
-            // Правильне відмінювання українською мовою
             let wordString = 'слів';
             const lastDigit = words % 10;
             const lastTwoDigits = words % 100;
@@ -248,7 +246,7 @@
             counterText.innerText = `${words} ${wordString} · ~${readingTime} хв читання`;
         }
 
-        // === ГАРЯЧІ КЛАВІШІ ДЛЯ ФОРМАТУВАННЯ ===
+        // === ГАРЯЧІ КЛАВІШІ ===
         bodyDiv.addEventListener('keydown', (e) => {
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const modifier = isMac ? e.metaKey : e.ctrlKey;
@@ -263,18 +261,17 @@
             }
         });
 
-        // === КОНВЕРТАЦІЯ ДЛЯ TELEGRAM HTML ===
-        // Функція перетворює HTML-код редактора на чисту розмітку, яку розуміє Telegram
-        function convertToTelegramHTML(title, bodyHTML) {
+        // === КОНВЕРТАЦІЯ ТА РОЗБИТТЯ НА ЧАСТИНИ ===
+        function convertToTelegramChunks(title, bodyHTML) {
             const temp = document.createElement('div');
             temp.innerHTML = bodyHTML;
 
+            const escapeHTML = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Серіалізація окремої гілки DOM у Telegram HTML
             function serialize(node) {
                 if (node.nodeType === Node.TEXT_NODE) {
-                    return node.nodeValue
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
+                    return node.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 }
                 if (node.nodeType !== Node.ELEMENT_NODE) {
                     return '';
@@ -298,18 +295,54 @@
                 return childrenHtml;
             }
 
-            let bodyFormatted = Array.from(temp.childNodes).map(serialize).join('');
-            bodyFormatted = bodyFormatted.replace(/\n{3,}/g, '\n\n').trim();
+            // Розбиваємо документ на окремі абзаци (верхньорівневі блоки)
+            const paragraphs = Array.from(temp.childNodes)
+                .map(node => serialize(node).trim())
+                .filter(p => p.length > 0);
 
-            const escapeHTML = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const chunks = [];
+            let currentChunk = '';
+            
+            // Максимальний безпечний ліміт символів на одне повідомлення (з урахуванням HTML тегів)
+            const MAX_LIMIT = 4000; 
 
-            let finalMessage = '';
+            // Якщо є заголовок, ініціалізуємо ним першу частину
             if (title.trim()) {
-                finalMessage += `<b>${escapeHTML(title.trim())}</b>\n\n`;
+                currentChunk += `<b>${escapeHTML(title.trim())}</b>\n\n`;
             }
-            finalMessage += bodyFormatted;
 
-            return finalMessage.trim();
+            for (let para of paragraphs) {
+                // Якщо раптом один абзац занадто великий (> 4000 символів), примусово ділимо його
+                if (para.length > MAX_LIMIT) {
+                    if (currentChunk.trim()) {
+                        chunks.push(currentChunk.trim());
+                        currentChunk = '';
+                    }
+                    let remaining = para;
+                    while (remaining.length > 0) {
+                        const subChunk = remaining.substring(0, MAX_LIMIT);
+                        chunks.push(subChunk.trim());
+                        remaining = remaining.substring(MAX_LIMIT);
+                    }
+                } else {
+                    const separator = currentChunk ? '\n\n' : '';
+                    // Якщо додавання поточного абзацу перевищить ліміт — фіксуємо поточну частину та створюємо нову
+                    if (currentChunk.length + separator.length + para.length > MAX_LIMIT) {
+                        if (currentChunk.trim()) {
+                            chunks.push(currentChunk.trim());
+                        }
+                        currentChunk = para;
+                    } else {
+                        currentChunk += separator + para;
+                    }
+                }
+            }
+
+            if (currentChunk.trim()) {
+                chunks.push(currentChunk.trim());
+            }
+
+            return chunks;
         }
 
         // === ПУБЛІКАЦІЯ ===
@@ -317,21 +350,20 @@
             const title = titleInput.value.trim();
             const bodyHTML = bodyDiv.innerHTML;
 
-            // Перевіряємо, чи є хоч якийсь текст
             if (!title && !bodyDiv.innerText.trim()) return;
 
             publishBtn.disabled = true;
             statusText.innerText = 'Надсилання...';
             statusText.classList.add('show');
 
-            // Створюємо правильний HTML для Telegram на клієнті
-            const formattedText = convertToTelegramHTML(title, bodyHTML);
+            // Отримуємо масив частин тексту для відправки
+            const chunks = convertToTelegramChunks(title, bodyHTML);
 
             try {
                 const response = await fetch('/api/publish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ formattedText })
+                    body: JSON.stringify({ chunks })
                 });
 
                 const data = await response.json();
