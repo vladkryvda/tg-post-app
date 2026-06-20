@@ -3,189 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Web Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Підключення Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Новий допис</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
-        body { background-color: #e7ebf0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        
-        /* Екран входу  */
-        .auth-container { display: flex; flex-direction: column; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 380px; text-align: center; }
-        .auth-container h2 { margin-bottom: 20px; font-weight: 500; color: #222; }
-        .auth-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #dadada; border-radius: 8px; outline: none; font-size: 15px; }
-        .auth-btn { background-color: #5288c1; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 500; }
-        .auth-btn:hover { background-color: #4371a3; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        /* Контейнер чату */
-        .chat-container { display: none; width: 100%; max-width: 500px; height: 100vh; background: #f4f4f5; flex-direction: column; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08); position: relative; }
-        @media (min-width: 768px) { .chat-container { height: 90vh; border-radius: 12px; overflow: hidden; } }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #222222;
+            line-height: 1.58;
+            padding: 20px 20px 0 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-        .chat-header { background-color: #ffffff; padding: 10px 16px; display: flex; align-items: center; border-bottom: 1px solid #e5e5e5; height: 60px; }
-        .avatar { width: 42px; height: 42px; background-color: #50b6f3; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; margin-right: 12px; }
-        .chat-info { flex-grow: 1; }
-        .chat-title { font-size: 16px; font-weight: 500; color: #000000; }
-        .chat-status { font-size: 13px; color: #707579; margin-top: 2px; }
-        .logout-btn { background: none; border: none; color: #e53935; cursor: pointer; font-size: 14px; font-weight: 500; }
+        main {
+            width: 100%;
+            max-width: 720px;
+            margin-top: 10px; 
+        }
 
-        .chat-messages { flex-grow: 1; padding: 16px; overflow-y: auto; background-color: #f4f4f5; background-image: radial-gradient(#dfe3e9 1px, transparent 0); background-size: 16px 16px; display: flex; flex-direction: column; gap: 8px; }
-        .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 15px; line-height: 1.4; position: relative; word-wrap: break-word; align-self: flex-start; background-color: #ffffff; color: #000000; box-shadow: 0 1px 2px rgba(0,0,0,0.07); }
-        .message-bubble.my-message { align-self: flex-end; background-color: #eeffde; }
-        .message-time { font-size: 10px; color: #a0acb6; float: right; margin-top: 4px; margin-left: 8px; }
+        .title-input {
+            width: 100%;
+            font-size: 42px;
+            font-weight: 700;
+            border: none;
+            outline: none;
+            margin-bottom: 20px;
+            color: #222222;
+            background: transparent;
+        }
 
-        .chat-input-area { background-color: #ffffff; padding: 10px 12px; border-top: 1px solid #e5e5e5; display: flex; gap: 8px; }
-        .message-textarea { flex-grow: 1; padding: 10px 12px; border: 1px solid #dadada; border-radius: 8px; font-size: 15px; outline: none; resize: none; height: 40px; max-height: 120px; }
-        .send-btn { background-color: #5288c1; color: white; border: none; border-radius: 8px; padding: 0 20px; cursor: pointer; font-weight: 500; font-size: 14px; }
-        .send-btn:disabled { background-color: #b9cfe3; cursor: not-allowed; }
+        .title-input::placeholder {
+            color: #e8e8e8;
+        }
+
+        .editor {
+            width: 100%;
+            min-height: 350px;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            color: #333333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding-bottom: 150px;
+            background: transparent;
+        }
+
+        .editor:empty:before {
+            content: attr(data-placeholder);
+            color: #a0a0a0;
+            cursor: text;
+        }
+
+        .bottom-controls {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 10;
+        }
+
+        .status-message {
+            font-size: 13px;
+            color: #888888;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .status-message.show {
+            opacity: 1;
+        }
+
+        .publish-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: #222222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .publish-btn:hover {
+            transform: translateX(4px);
+            color: #000000;
+        }
+
+        .publish-btn:disabled {
+            color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 <body>
 
-<!-- Екран авторизації -->
-<div class="auth-container" id="authScreen">
-    <h2>Вхід до консолі</h2>
-    <input type="email" id="email" class="auth-input" placeholder="Електронна пошта" required>
-    <input type="password" id="password" class="auth-input" placeholder="Пароль" required>
-    <button class="auth-btn" onclick="handleLogin()">Увійти</button>
-</div>
+    <main>
+        <input type="text" id="post-title" class="title-input" placeholder="Заголовок" autofocus>
+        <div id="post-body" class="editor" contenteditable="true" data-placeholder="Почніть писати свою історію тут..."></div>
+    </main>
 
-<!-- Контейнер чату (показується після входу) -->
-<div class="chat-container" id="chatScreen">
-    <div class="chat-header">
-        <div class="avatar">СП</div>
-        <div class="chat-info">
-            <div class="chat-title">Моя Спина & Постава</div>
-            <div class="chat-status">онлайн-консоль</div>
-        </div>
-        <button class="logout-btn" onclick="handleLogout()">Вийти</button>
+    <div class="bottom-controls" id="controls-area">
+        <span id="status" class="status-message">Надсилання...</span>
+        <button id="publish-btn" class="publish-btn" onclick="publishPost()" aria-label="Опублікувати">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </button>
     </div>
 
-    <div class="chat-messages" id="messagesContainer">
-        <!-- Повідомлення завантажаться автоматично -->
-    </div>
+    <script>
+        const titleInput = document.getElementById('post-title');
+        const bodyDiv = document.getElementById('post-body');
+        const publishBtn = document.getElementById('publish-btn');
+        const statusText = document.getElementById('status');
 
-    <div class="chat-input-area">
-        <textarea class="message-textarea" id="messageText" placeholder="Написати повідомлення..." required></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Надіслати</button>
-    </div>
-</div>
+        // === ПРАЦЯ З LOCALSTORAGE (Збереження чернетки) ===
+        
+        // Відновлення тексту при завантаженні сторінки
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTitle = localStorage.getItem('draft_title');
+            const savedBody = localStorage.getItem('draft_body');
 
-<script>
-    // Ініціалізація Supabase - тепер змінна називається supabaseClient
-    const SUPABASE_URL = "https://wvccfqqtcimdtzvvjfys.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2Y2NmcXF0Y2ltZHR6dnZqZnlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjQwNzksImV4cCI6MjA5NzQwMDA3OX0.FN2Y6lY_KKrLzT_1Pvif89_TcU5yAnwdLOlzeB7TiQg";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            if (savedTitle) {
+                titleInput.value = savedTitle;
+            }
+            if (savedBody) {
+                bodyDiv.innerHTML = savedBody;
+            }
+        });
 
-    let session = null;
+        // Відстеження введення тексту та автоматичне збереження
+        titleInput.addEventListener('input', () => {
+            localStorage.setItem('draft_title', titleInput.value);
+        });
 
-    // Перевірка сесії при завантаженні сторінки
-    window.onload = async () => {
-        const { data } = await supabaseClient.auth.getSession();
-        session = data.session;
-        toggleScreens();
-        if (session) {
-            loadChatHistory();
+        bodyDiv.addEventListener('input', () => {
+            localStorage.setItem('draft_body', bodyDiv.innerHTML);
+        });
+
+        // Очищення збереженої чернетки після успішної відправки
+        function clearDraft() {
+            localStorage.removeItem('draft_title');
+            localStorage.removeItem('draft_body');
+            titleInput.value = '';
+            bodyDiv.innerHTML = '';
         }
-    };
 
-    function toggleScreens() {
-        if (session) {
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('chatScreen').style.display = 'flex';
-        } else {
-            document.getElementById('authScreen').style.display = 'flex';
-            document.getElementById('chatScreen').style.display = 'none';
-        }
-    }
+        // ==================================================
 
-    // Логіка входу
-    async function handleLogin() {
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
+        async function publishPost() {
+            const title = titleInput.value.trim();
+            const body = bodyDiv.innerText.trim();
 
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (!title && !body) {
+                return;
+            }
 
-        if (error) {
-            alert("Помилка авторизації: " + error.message);
-        } else {
-            session = data.session;
-            toggleScreens();
-            loadChatHistory();
-        }
-    }
+            publishBtn.disabled = true;
+            statusText.innerText = 'Надсилання...';
+            statusText.classList.add('show');
 
-    // Логіка виходу
-    async function handleLogout() {
-        await supabaseClient.auth.signOut();
-        session = null;
-        toggleScreens();
-        document.getElementById('messagesContainer').innerHTML = '';
-    }
-
-    // Завантаження реальної історії повідомлень (через парсер бекенду)
-    async function loadChatHistory() {
-        const messagesContainer = document.getElementById('messagesContainer');
-        messagesContainer.innerHTML = '<div style="text-align:center;color:#707579;padding:20px;">Завантаження історії...</div>';
-
-        try {
-            const response = await fetch('/api/history', {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-            const data = await response.json();
-
-            if (response.ok && Array.isArray(data)) {
-                messagesContainer.innerHTML = '';
-                if (data.length === 0) {
-                    messagesContainer.innerHTML = '<div style="text-align:center;color:#707579;padding:20px;">Повідомлень немає</div>';
-                }
-                data.forEach(msg => {
-                    const bubble = document.createElement('div');
-                    bubble.className = 'message-bubble';
-                    bubble.innerHTML = `${msg.text.replace(/\n/g, '<br>')} <div class="message-time">${msg.time}</div>`;
-                    messagesContainer.appendChild(bubble);
+            try {
+                const response = await fetch('/api/publish', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        text: body
+                    })
                 });
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            } else {
-                messagesContainer.innerHTML = '<div style="text-align:center;color:#e53935;padding:20px;">Не вдалося завантажити історію</div>';
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    statusText.innerText = 'Опубліковано';
+                    
+                    // Успішно відправлено - очищуємо чернетку
+                    clearDraft();
+                    
+                    setTimeout(() => {
+                        statusText.classList.remove('show');
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Помилка надсилання');
+                }
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = 'Помилка';
+                alert('Не вдалося опублікувати: ' + error.message);
+                setTimeout(() => {
+                    statusText.classList.remove('show');
+                }, 4000);
+            } finally {
+                publishBtn.disabled = false;
             }
-        } catch (err) {
-            messagesContainer.innerHTML = '<div style="text-align:center;color:#e53935;padding:20px;">Помилка підключення до сервера історії</div>';
         }
-    }
 
-    // Відправка повідомлення
-    async function sendMessage() {
-        const textInput = document.getElementById('messageText');
-        const text = textInput.value.trim();
-        if (!text) return;
+        // Повноекранний режим на подвійний клік
+        document.addEventListener('dblclick', function(event) {
+            const controls = document.getElementById('controls-area');
 
-        const sendBtn = document.getElementById('sendBtn');
-        sendBtn.disabled = true;
+            const isClickInsideInput = titleInput.contains(event.target) || event.target === titleInput;
+            const isClickInsideBody = bodyDiv.contains(event.target) || event.target === bodyDiv;
+            const isClickInsideControls = controls.contains(event.target) || event.target === controls;
 
-        try {
-            const response = await fetch('/api/publish', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ text })
-            });
-
-            if (response.ok) {
-                textInput.value = '';
-                setTimeout(loadChatHistory, 1000);
-            } else {
-                const err = await response.json();
-                alert("Помилка відправки: " + (err.error || "Невідома помилка"));
+            if (!isClickInsideInput && !isClickInsideBody && !isClickInsideControls) {
+                toggleFullscreen();
             }
-        } catch (e) {
-            alert("Помилка мережі при відправці.");
-        } finally {
-            sendBtn.disabled = false;
+        });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Не вдалося увімкнути повноекранний режим: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
-    }
-</script>
+    </script>
 </body>
 </html>
