@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#161617" media="(prefers-color-scheme: dark)">
     <title>Новий допис</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Підключення стильних шрифтів: Newsreader (текст/заголовок) та Plus Jakarta Sans (UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
+
     <style>
         * {
             box-sizing: border-box;
@@ -15,81 +21,99 @@
         }
 
         html, body, :fullscreen, ::backdrop {
-            background-color: #ffffff;
+            background-color: #fcfbf9; /* Теплий паперовий колір */
             color: #222222;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.58;
+            font-family: 'Newsreader', Georgia, serif;
+            font-size: 20px;
+            line-height: 1.75;
             padding: max(20px, env(safe-area-inset-top)) 20px 0 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection {
+            background-color: #e8e4dc;
+            color: #111;
         }
 
         main {
             width: 100%;
-            max-width: 720px;
-            margin-top: 40px; 
+            max-width: 680px;
+            margin-top: 60px; 
         }
 
         .title-input {
             width: 100%;
-            font-size: 42px;
-            font-weight: 700;
+            font-family: 'Newsreader', Georgia, serif;
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
             border: none;
             outline: none;
-            margin-bottom: 20px;
-            color: #222222;
+            margin-bottom: 28px;
+            color: #111111;
             background: transparent;
+            line-height: 1.25;
         }
 
         .title-input::placeholder {
-            color: #e8e8e8;
+            color: #e0dcd5;
+            font-weight: 400;
         }
 
         .editor {
             width: 100%;
             min-height: 400px;
-            font-size: 18px;
+            font-family: 'Newsreader', Georgia, serif;
+            font-size: 20px;
+            font-weight: 400;
             border: none;
             outline: none;
-            color: #333333;
+            color: #2c2c2c;
             white-space: pre-wrap;
             word-wrap: break-word;
-            padding-bottom: 150px;
+            padding-bottom: 180px;
             background: transparent;
         }
 
         .editor:empty:before {
             content: attr(data-placeholder);
-            color: #a0a0a0;
+            color: #b5b0a6;
             cursor: text;
+            font-style: italic;
+        }
+
+        .ui-element {
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
         }
 
         .counter {
             position: fixed;
-            bottom: 40px;
+            bottom: 36px;
             left: 40px;
-            font-size: 12px;
-            color: #b0b0b0;
+            font-size: 13px;
+            color: #a39e93;
             font-weight: 400;
             user-select: none;
             pointer-events: none;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
             transition: color 0.3s ease;
         }
 
         .bottom-controls {
             position: fixed;
-            bottom: 40px;
+            bottom: 32px;
             right: 40px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             z-index: 10;
         }
 
@@ -106,65 +130,80 @@
             opacity: 1;
         }
 
-        .publish-btn {
+        .icon-btn {
             background: none;
             border: none;
             cursor: pointer;
             padding: 8px;
-            color: #222222;
+            color: #777268;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s ease, color 0.2s ease;
+            border-radius: 50%;
+            transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            color: #111111;
+            background-color: rgba(0, 0, 0, 0.04);
         }
 
         .publish-btn:hover {
-            transform: translateX(4px);
-            color: #000000;
+            transform: translateX(3px);
         }
 
-        .publish-btn:disabled {
+        .icon-btn:disabled {
             color: #cccccc;
             cursor: not-allowed;
             transform: none;
         }
 
+        .sound-btn.muted {
+            opacity: 0.4;
+        }
+
         @media (prefers-color-scheme: dark) {
             html, body, :fullscreen, ::backdrop {
-                background-color: #191919;
-                color: #ebebeb;
+                background-color: #161617;
+                color: #e1e1e1;
+            }
+
+            ::selection {
+                background-color: #333336;
+                color: #fff;
             }
 
             .title-input {
-                color: #ebebeb;
+                color: #f0f0f0;
             }
 
             .title-input::placeholder {
-                color: #373737;
+                color: #343438;
             }
 
             .editor {
-                color: #e3e3e3;
+                color: #d8d8d8;
             }
 
             .editor:empty:before {
-                color: #555555;
+                color: #4a4a4e;
             }
 
             .counter {
-                color: #555555;
+                color: #55555a;
             }
 
-            .publish-btn {
-                color: #a0a0a0;
+            .icon-btn {
+                color: #88888e;
             }
 
-            .publish-btn:hover {
-                color: #ebebeb;
+            .icon-btn:hover {
+                color: #f0f0f0;
+                background-color: rgba(255, 255, 255, 0.05);
             }
 
             .status-message {
-                color: #777777;
+                color: #88888e;
             }
         }
     </style>
@@ -176,12 +215,27 @@
         <div id="post-body" class="editor" contenteditable="true" data-placeholder="Почніть писати свою історію тут..."></div>
     </main>
 
-    <div id="counter" class="counter">0 слів</div>
+    <div id="counter" class="counter ui-element">0 слів</div>
 
-    <div class="bottom-controls" id="controls-area">
+    <div class="bottom-controls ui-element" id="controls-area">
         <span id="status" class="status-message">Надсилання...</span>
-        <button id="publish-btn" class="publish-btn" onclick="publishPost()" aria-label="Опублікувати">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+        
+        <!-- Кнопка увімкнення/вимкнення звуку -->
+        <button id="sound-toggle" class="icon-btn sound-btn" onclick="toggleSound()" aria-label="Перемикач звуку" title="Звук клавіатури">
+            <svg id="sound-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <svg id="sound-icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+        </button>
+
+        <!-- Кнопка публікації -->
+        <button id="publish-btn" class="icon-btn publish-btn" onclick="publishPost()" aria-label="Опублікувати" title="Опублікувати">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
@@ -194,6 +248,102 @@
         const publishBtn = document.getElementById('publish-btn');
         const statusText = document.getElementById('status');
         const counterText = document.getElementById('counter');
+        const soundToggleBtn = document.getElementById('sound-toggle');
+        const soundIconOn = document.getElementById('sound-icon-on');
+        const soundIconOff = document.getElementById('sound-icon-off');
+
+        // === СИНТЕЗАТОР ЗВУКІВ ДРУКУ (Web Audio API) ===
+        let audioCtx = null;
+        let isSoundEnabled = localStorage.getItem('sound_enabled') !== 'false';
+
+        function updateSoundUI() {
+            if (isSoundEnabled) {
+                soundIconOn.style.display = 'block';
+                soundIconOff.style.display = 'none';
+                soundToggleBtn.classList.remove('muted');
+            } else {
+                soundIconOn.style.display = 'none';
+                soundIconOff.style.display = 'block';
+                soundToggleBtn.classList.add('muted');
+            }
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            localStorage.setItem('sound_enabled', isSoundEnabled);
+            updateSoundUI();
+        }
+
+        function playKeySound(key) {
+            if (!isSoundEnabled) return;
+
+            // Ініціалізація AudioContext при першому натисканні
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+
+            // Створення генератора шуму (для тактильного клацання)
+            const bufferSize = audioCtx.sampleRate * 0.02; // 20мс тривалість
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            // Фільтр тонкої настройки звуку
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+
+            // Налаштування тону під різні клавіші
+            if (key === 'Enter') {
+                filter.frequency.setValueAtTime(450, now); // Глибокий стук
+                filter.Q.setValueAtTime(2.0, now);
+            } else if (key === ' ') {
+                filter.frequency.setValueAtTime(650, now); // М'який пробіл
+                filter.Q.setValueAtTime(3.0, now);
+            } else if (key === 'Backspace') {
+                filter.frequency.setValueAtTime(1200, now); // Вищий глухий клац
+                filter.Q.setValueAtTime(4.0, now);
+            } else {
+                // Випадкова міні-варіація частоти для природності друку
+                const randomFreq = 850 + (Math.random() * 150 - 75);
+                filter.frequency.setValueAtTime(randomFreq, now);
+                filter.Q.setValueAtTime(5.0, now);
+            }
+
+            // Обвідна гучності (Gain Envelope)
+            const gain = audioCtx.createGain();
+            const volume = (key === 'Enter' || key === ' ') ? 0.18 : 0.12;
+            
+            gain.gain.setValueAtTime(volume, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start(now);
+        }
+
+        // Прослуховування натискань клавіш для звуку
+        const handleKeyDown = (e) => {
+            // Ігноруємо системні комбінації типу Ctrl+C, Cmd+R
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            playKeySound(e.key);
+        };
+
+        titleInput.addEventListener('keydown', handleKeyDown);
+        bodyDiv.addEventListener('keydown', handleKeyDown);
 
         // === LOCALSTORAGE ===
         document.addEventListener('DOMContentLoaded', () => {
@@ -204,6 +354,7 @@
             if (savedBody) bodyDiv.innerHTML = savedBody;
 
             updateCounter();
+            updateSoundUI();
         });
 
         titleInput.addEventListener('input', () => {
@@ -269,7 +420,6 @@
 
             const escapeHTML = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-            // Серіалізація окремої гілки DOM у Telegram HTML
             function serialize(node) {
                 if (node.nodeType === Node.TEXT_NODE) {
                     return node.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -296,24 +446,19 @@
                 return childrenHtml;
             }
 
-            // Розбиваємо документ на окремі абзаци (верхньорівневі блоки)
             const paragraphs = Array.from(temp.childNodes)
                 .map(node => serialize(node).trim())
                 .filter(p => p.length > 0);
 
             const chunks = [];
             let currentChunk = '';
-            
-            // Максимальний безпечний ліміт символів на одне повідомлення (з урахуванням HTML тегів)
             const MAX_LIMIT = 4000; 
 
-            // Якщо є заголовок, ініціалізуємо ним першу частину
             if (title.trim()) {
                 currentChunk += `<b>${escapeHTML(title.trim())}</b>\n\n`;
             }
 
             for (let para of paragraphs) {
-                // Якщо раптом один абзац занадто великий (> 4000 символів), примусово ділимо його
                 if (para.length > MAX_LIMIT) {
                     if (currentChunk.trim()) {
                         chunks.push(currentChunk.trim());
@@ -327,7 +472,6 @@
                     }
                 } else {
                     const separator = currentChunk ? '\n\n' : '';
-                    // Якщо додавання поточного абзацу перевищить ліміт — фіксуємо поточну частину та створюємо нову
                     if (currentChunk.length + separator.length + para.length > MAX_LIMIT) {
                         if (currentChunk.trim()) {
                             chunks.push(currentChunk.trim());
@@ -357,7 +501,6 @@
             statusText.innerText = 'Надсилання...';
             statusText.classList.add('show');
 
-            // Отримуємо масив частин тексту для відправки
             const chunks = convertToTelegramChunks(title, bodyHTML);
 
             try {
