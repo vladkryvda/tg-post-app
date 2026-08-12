@@ -89,15 +89,25 @@
             top: 0;
             overflow-y: auto;
             background-color: #f7f5f0;
-            transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+            transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        min-width 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        padding 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        opacity 0.2s ease, 
+                        border-color 0.3s ease;
             z-index: 50;
+            box-sizing: border-box;
         }
 
-        /* Стан прихованого сайдбару */
+        /* Стан прихованого сайдбару (повне згортання в 0px) */
         .app-layout.sidebar-collapsed .sidebar {
-            margin-left: -320px;
+            width: 0 !important;
+            min-width: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
             opacity: 0;
             pointer-events: none;
+            overflow: hidden;
+            border-right-color: transparent;
         }
 
         .sidebar-header {
@@ -105,6 +115,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 4px 6px 38px; /* Зсув під кнопку перемикача */
+            white-space: nowrap;
         }
 
         .sidebar-title {
@@ -233,6 +244,7 @@
             align-items: center;
             padding: max(20px, env(safe-area-inset-top)) 20px 0 20px;
             width: 100%;
+            transition: padding 0.3s ease;
         }
 
         main {
@@ -258,6 +270,7 @@
             overflow: hidden;
             box-sizing: border-box;
             display: block;
+            min-height: 58px;
         }
 
         .title-input::placeholder {
@@ -291,7 +304,7 @@
         .counter {
             position: fixed;
             bottom: 36px;
-            left: 360px; /* Початковий зсув з урахуванням сайдбару */
+            left: 360px; /* Початковий зсув при відкритому сайдбарі */
             font-size: 13px;
             color: #a39e93;
             font-weight: 400;
@@ -481,22 +494,22 @@
             }
 
             .sidebar {
-                width: 100%;
-                min-width: 100%;
+                width: 100% !important;
+                min-width: 100% !important;
                 height: auto;
                 max-height: 220px;
                 position: relative;
                 border-right: none;
                 border-bottom: 1px solid #eae7e0;
-                padding: 16px;
-                margin-left: 0 !important;
+                padding: 16px !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
             }
 
             .app-layout.sidebar-collapsed .sidebar {
-                max-height: 0;
-                padding: 0 16px;
+                max-height: 0 !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
                 overflow: hidden;
                 border-bottom: none;
             }
@@ -618,7 +631,7 @@
         // === АВТО-РОЗШИРЕННЯ ЗАГОЛОВКА (TEXTAREA) ===
         function autoResizeTitle() {
             titleInput.style.height = 'auto';
-            titleInput.style.height = titleInput.scrollHeight + 'px';
+            titleInput.style.height = Math.max(58, titleInput.scrollHeight) + 'px';
         }
 
         // === МЕНЕДЖЕР ЧЕРНЕТОК (LOCALSTORAGE) ===
@@ -641,9 +654,8 @@
                 }
             }
 
-            // Якщо немає жодної чернетки — створюємо першу
-            if (drafts.length === 0) {
-                drafts.push(createNewDraftObject());
+            if (!Array.isArray(drafts) || drafts.length === 0) {
+                drafts = [createNewDraftObject()];
             }
 
             // Зчитуємо ID активної чернетки
@@ -752,7 +764,13 @@
             autoResizeTitle();
             updateCounter();
             renderSidebar();
-            titleInput.focus();
+
+            setTimeout(() => {
+                titleInput.focus();
+            }, 10);
+
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.scrollTop = 0;
         }
 
         function deleteDraft(id) {
@@ -767,3 +785,260 @@
                 autoResizeTitle();
                 renderSidebar();
                 updateCounter();
+                return;
+            }
+
+            drafts = drafts.filter(d => d.id !== id);
+
+            if (activeDraftId === id) {
+                activeDraftId = drafts[0].id;
+                const current = getActiveDraft();
+                titleInput.value = current.title || '';
+                bodyDiv.innerHTML = current.bodyHTML || '';
+            }
+
+            saveDraftsToStorage();
+            autoResizeTitle();
+            renderSidebar();
+            updateCounter();
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // === ІНІЦІАЛІЗАЦІЯ ПРИ ЗАВАНТАЖЕННІ ===
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDraftsFromStorage();
+
+            const activeDraft = getActiveDraft();
+            titleInput.value = activeDraft.title || '';
+            bodyDiv.innerHTML = activeDraft.bodyHTML || '';
+
+            autoResizeTitle();
+            updateSidebarUI();
+            renderSidebar();
+            updateCounter();
+        });
+
+        // Слухачі оновлення тексту
+        titleInput.addEventListener('input', () => {
+            autoResizeTitle();
+            updateCurrentDraftData();
+            renderSidebar();
+        });
+
+        bodyDiv.addEventListener('input', () => {
+            updateCurrentDraftData();
+            updateCounter();
+            renderSidebar();
+        });
+
+        // === ЛІЧИЛЬНИК ===
+        function updateCounter() {
+            const text = bodyDiv.innerText.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const readingTime = Math.max(1, Math.ceil(words / 180));
+
+            if (words === 0) {
+                counterText.innerText = '0 слів';
+                return;
+            }
+
+            let wordString = 'слів';
+            const lastDigit = words % 10;
+            const lastTwoDigits = words % 100;
+
+            if (lastDigit === 1 && lastTwoDigits !== 11) {
+                wordString = 'слово';
+            } else if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 10 || lastTwoDigits >= 20)) {
+                wordString = 'слова';
+            }
+
+            counterText.innerText = `${words} ${wordString} · ~${readingTime} хв читання`;
+        }
+
+        // === ГАРЯЧІ КЛАВІШІ ===
+        bodyDiv.addEventListener('keydown', (e) => {
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+            if (modifier && e.key.toLowerCase() === 'b') {
+                e.preventDefault();
+                document.execCommand('bold', false, null);
+            }
+            if (modifier && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                document.execCommand('italic', false, null);
+            }
+        });
+
+        // === КОНВЕРТАЦІЯ ТА РОЗБИТТЯ НА ЧАСТИНИ ===
+        function convertToTelegramChunks(title, bodyHTML) {
+            const temp = document.createElement('div');
+            temp.innerHTML = bodyHTML;
+
+            const escapeHTMLFunc = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            function serialize(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return '';
+                }
+
+                const tagName = node.tagName.toLowerCase();
+                const childrenHtml = Array.from(node.childNodes).map(serialize).join('');
+
+                if (tagName === 'b' || tagName === 'strong') {
+                    return `<b>${childrenHtml}</b>`;
+                }
+                if (tagName === 'i' || tagName === 'em') {
+                    return `<i>${childrenHtml}</i>`;
+                }
+                if (tagName === 'br') {
+                    return '\n';
+                }
+                if (tagName === 'div' || tagName === 'p') {
+                    return `\n${childrenHtml}`;
+                }
+                return childrenHtml;
+            }
+
+            const paragraphs = Array.from(temp.childNodes)
+                .map(node => serialize(node).trim())
+                .filter(p => p.length > 0);
+
+            const chunks = [];
+            let currentChunk = '';
+            const MAX_LIMIT = 4000; 
+
+            if (title.trim()) {
+                currentChunk += `<b>${escapeHTMLFunc(title.trim())}</b>\n\n`;
+            }
+
+            for (let para of paragraphs) {
+                if (para.length > MAX_LIMIT) {
+                    if (currentChunk.trim()) {
+                        chunks.push(currentChunk.trim());
+                        currentChunk = '';
+                    }
+                    let remaining = para;
+                    while (remaining.length > 0) {
+                        const subChunk = remaining.substring(0, MAX_LIMIT);
+                        chunks.push(subChunk.trim());
+                        remaining = remaining.substring(MAX_LIMIT);
+                    }
+                } else {
+                    const separator = currentChunk ? '\n\n' : '';
+                    if (currentChunk.length + separator.length + para.length > MAX_LIMIT) {
+                        if (currentChunk.trim()) {
+                            chunks.push(currentChunk.trim());
+                        }
+                        currentChunk = para;
+                    } else {
+                        currentChunk += separator + para;
+                    }
+                }
+            }
+
+            if (currentChunk.trim()) {
+                chunks.push(currentChunk.trim());
+            }
+
+            return chunks;
+        }
+
+        // === ПУБЛІКАЦІЯ ===
+        async function publishPost() {
+            const title = titleInput.value.trim();
+            const bodyHTML = bodyDiv.innerHTML;
+
+            if (!title && !bodyDiv.innerText.trim()) return;
+
+            publishBtn.disabled = true;
+            statusText.innerText = 'Надсилання...';
+            statusText.classList.add('show');
+
+            const chunks = convertToTelegramChunks(title, bodyHTML);
+
+            try {
+                const response = await fetch('/api/publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chunks })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    statusText.innerText = 'Опубліковано';
+                    
+                    const publishedId = activeDraftId;
+                    drafts = drafts.filter(d => d.id !== publishedId);
+
+                    if (drafts.length === 0) {
+                        drafts.push(createNewDraftObject());
+                    }
+
+                    activeDraftId = drafts[0].id;
+                    saveDraftsToStorage();
+
+                    const current = getActiveDraft();
+                    titleInput.value = current.title || '';
+                    bodyDiv.innerHTML = current.bodyHTML || '';
+
+                    autoResizeTitle();
+                    updateCounter();
+                    renderSidebar();
+                    
+                    setTimeout(() => {
+                        statusText.classList.remove('show');
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Помилка надсилання');
+                }
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = 'Помилка';
+                alert('Не вдалося опублікувати: ' + error.message);
+                setTimeout(() => {
+                    statusText.classList.remove('show');
+                }, 4000);
+            } finally {
+                publishBtn.disabled = false;
+            }
+        }
+
+        // Повноекранний режим
+        document.addEventListener('dblclick', function(event) {
+            const controls = document.getElementById('controls-area');
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggle-sidebar-btn');
+
+            const isClickInsideInput = titleInput.contains(event.target) || event.target === titleInput;
+            const isClickInsideBody = bodyDiv.contains(event.target) || event.target === bodyDiv;
+            const isClickInsideControls = controls.contains(event.target) || event.target === controls;
+            const isClickInsideSidebar = sidebar.contains(event.target) || event.target === sidebar;
+            const isClickInsideToggle = toggleBtn.contains(event.target) || event.target === toggleBtn;
+
+            if (!isClickInsideInput && !isClickInsideBody && !isClickInsideControls && !isClickInsideSidebar && !isClickInsideToggle) {
+                toggleFullscreen();
+            }
+        });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Повноекранний режим недоступний: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
