@@ -1,15 +1,23 @@
-const CACHE_NAME = 'tg-editor-vercel-v1';
+const CACHE_NAME = 'tg-editor-v2';
+
+const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Для Vercel кешуємо лише корінь '/', без /index.html
-      const assets = ['/', '/manifest.json'];
-      for (const url of assets) {
+      for (const url of PRECACHE_ASSETS) {
         try {
           await cache.add(url);
         } catch (e) {
-          console.warn('Кеш пропущено для:', url);
+          console.warn('Попереднє кешування пропущено для:', url, e);
         }
       }
     })
@@ -27,27 +35,71 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) return;
+  const url = event.request.url;
 
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return networkResponse;
-      })
-      .catch(async () => {
-        const cached = await caches.match(event.request);
-        if (cached) return cached;
+  // Ігноруємо не HTTP/HTTPS (наприклад, внутрішні розширення safari-extension://)
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
-        if (event.request.mode === 'navigate') {
+  // Ігноруємо не-GET запити та запити до бекенд-API
+  if (event.request.method !== 'GET' || url.includes('/api/')) return;
+
+  // Обробка навігації сторінки (відкриття застосунку з Dock або браузера)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          // Якщо немає інтернету, відкриваємо сторінку з кешу замість вильоту
+          const cachedNavigate = await caches.match(event.request);
+          if (cachedNavigate) return cachedNavigate;
+
           const root = await caches.match('/');
           if (root) return root;
-        }
 
-        return new Response('Офлайн-режим', { status: 503, statusText: 'Offline' });
-      })
+          const indexHtml = await caches.match('/index.html');
+          if (indexHtml) return indexHtml;
+
+          return new Response('Офлайн-режим', {
+            status: 200,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        })
+    );
+    return;
+  }
+
+  // Обробка статичних файлів (кеш-перший підхід із фоновим оновленням)
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const clone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+            }
+          })
+          .catch(() => {});
+        return cachedResponse;
+      }
+
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return new Response('', { status: 408, statusText: 'Request timed out' });
+        });
+    })
   );
 });
