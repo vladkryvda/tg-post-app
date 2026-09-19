@@ -1,13 +1,10 @@
-const CACHE_NAME = 'tg-editor-v2';
+const CACHE_NAME = 'tg-editor-v3';
 
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.ico',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png'
+  '/favicon.ico'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,10 +34,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
-  // Ігноруємо не HTTP/HTTPS (наприклад, внутрішні розширення safari-extension://)
+  // Ігноруємо не HTTP/HTTPS (наприклад, safari-extension://)
   if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
-  // Ігноруємо не-GET запити та запити до бекенд-API
+  // Ігноруємо не-GET запити та виклики бекенд-API
   if (event.request.method !== 'GET' || url.includes('/api/')) return;
 
   // Обробка навігації сторінки (відкриття застосунку з Dock або браузера)
@@ -74,7 +71,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Обробка статичних файлів (кеш-перший підхід із фоновим оновленням)
+  // Обробка статичних файлів
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
