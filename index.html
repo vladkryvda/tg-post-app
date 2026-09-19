@@ -8,7 +8,14 @@
     <title>Новий допис</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
-    <!-- Підключення шрифтів: Newsreader (текст/заголовок) та Plus Jakarta Sans (UI) -->
+    <!-- PWA та Apple Web App мета-теги -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Дописи">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
+    <!-- Підключення шрифтів: Newsreader та Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -44,7 +51,7 @@
             font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
         }
 
-        /* === ОСНОВНА МАКЕТНА СТРУКТУРА (3 КОЛОНКИ) === */
+        /* === ОСНОВНА МАКЕТНА СТРУКТУРА === */
         .app-layout {
             display: flex;
             justify-content: center;
@@ -121,7 +128,6 @@
             box-sizing: border-box;
         }
 
-        /* Згорнутий лівий сайдбар */
         .app-layout.sidebar-collapsed .sidebar {
             width: 0 !important;
             min-width: 0 !important;
@@ -177,7 +183,6 @@
             flex: 1;
         }
 
-        /* === КАРТКИ ЧЕРНЕТОК === */
         .draft-card {
             position: relative;
             background: #ffffff;
@@ -281,7 +286,6 @@
             box-sizing: border-box;
         }
 
-        /* Згорнута права панель нотаток */
         .app-layout.notes-collapsed .notes-sidebar {
             width: 0 !important;
             min-width: 0 !important;
@@ -329,7 +333,7 @@
             font-style: italic;
         }
 
-        /* === ОСНОВНИЙ РЕДАКТОР (ЦЕНТРОВАННИЙ ЯК TELEGRA.PH) === */
+        /* === ОСНОВНИЙ РЕДАКТОР === */
         .main-content {
             flex: 1;
             display: flex;
@@ -393,6 +397,218 @@
             font-style: italic;
         }
 
+        /* === СТИЛІ КОМЕНТАРІВ У ТЕКСТІ === */
+        .has-comment {
+            position: relative;
+            background-color: rgba(196, 104, 81, 0.12);
+            border-bottom: 1.5px dotted #c46851;
+            border-radius: 3px;
+            padding: 0 3px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .has-comment:hover {
+            background-color: rgba(196, 104, 81, 0.22);
+        }
+
+        /* Сіра цятка над словом справа */
+        .has-comment::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            width: 6px;
+            height: 6px;
+            background-color: #8c827a;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1.5px #fcfbf9;
+            pointer-events: none;
+        }
+
+        /* Тултіп перегляду при наведенні */
+        .comment-tooltip {
+            position: fixed;
+            background-color: #24211e;
+            color: #fcfbf9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            line-height: 1.45;
+            max-width: 260px;
+            word-break: break-word;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(4px) scale(0.97);
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+        }
+
+        .comment-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Панель додавання коментаря при виділенні */
+        .comment-toolbar {
+            position: fixed;
+            background: #ffffff;
+            border: 1px solid #e2ddd3;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            display: none;
+            z-index: 300;
+            padding: 4px;
+        }
+
+        .comment-toolbar.active {
+            display: flex;
+            align-items: center;
+        }
+
+        .toolbar-action-btn {
+            background: transparent;
+            border: none;
+            color: #c46851;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.15s;
+        }
+
+        .toolbar-action-btn:hover {
+            background-color: rgba(196, 104, 81, 0.09);
+        }
+
+        .comment-add-box {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 2px;
+        }
+
+        .comment-add-box.active {
+            display: flex;
+        }
+
+        .comment-add-input {
+            border: 1px solid #e2ddd3;
+            background: #fbf9f5;
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            color: #222;
+            width: 190px;
+            outline: none;
+        }
+
+        .comment-add-input:focus {
+            border-color: #c46851;
+        }
+
+        .btn-confirm-add {
+            background: #c46851;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-confirm-add:hover {
+            background: #ab533d;
+        }
+
+        /* Попап редагування/видалення коментаря при кліку */
+        .comment-popover {
+            position: fixed;
+            background: #ffffff;
+            border: 1px solid #e2ddd3;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+            width: 270px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 310;
+        }
+
+        .comment-popover.active {
+            display: flex;
+        }
+
+        .comment-popover textarea {
+            width: 100%;
+            height: 65px;
+            border: 1px solid #e2ddd3;
+            background: #fbf9f5;
+            border-radius: 6px;
+            padding: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            color: #222;
+            resize: none;
+            outline: none;
+            line-height: 1.4;
+        }
+
+        .comment-popover textarea:focus {
+            border-color: #c46851;
+        }
+
+        .popover-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-popover-delete {
+            background: transparent;
+            border: none;
+            color: #8c877d;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 6px;
+            transition: color 0.15s;
+        }
+
+        .btn-popover-delete:hover {
+            color: #e03131;
+        }
+
+        .btn-popover-save {
+            background: #c46851;
+            color: #fff;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-popover-save:hover {
+            background: #ab533d;
+        }
+
         /* === ЕЛЕМЕНТИ УПРАВЛІННЯ ВНИЗУ === */
         .counter {
             position: fixed;
@@ -409,7 +625,6 @@
             z-index: 10;
         }
 
-        /* Адаптація центрування лічильника при відкритих сайдбарах */
         .app-layout:not(.sidebar-collapsed).notes-collapsed .counter {
             left: calc(50% + 150px);
         }
@@ -587,6 +802,34 @@
             .status-message {
                 color: #88888e;
             }
+
+            /* Темна тема для коментарів */
+            .has-comment {
+                background-color: rgba(196, 104, 81, 0.22);
+                border-bottom-color: #c46851;
+            }
+
+            .has-comment::after {
+                background-color: #7a7570;
+                box-shadow: 0 0 0 1.5px #161617;
+            }
+
+            .comment-toolbar, .comment-popover {
+                background: #212124;
+                border-color: #333338;
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+            }
+
+            .comment-add-input, .comment-popover textarea {
+                background: #18181a;
+                border-color: #333338;
+                color: #e1e1e1;
+            }
+
+            .comment-tooltip {
+                background-color: #2b2b30;
+                color: #f5f5f7;
+            }
         }
 
         /* === АДАПТИВНІСТЬ ДЛЯ МОБІЛЬНИХ ПРИСТРОЇВ === */
@@ -707,6 +950,32 @@
         </aside>
     </div>
 
+    <!-- Тултіп для перегляду коментаря при hover -->
+    <div id="comment-tooltip" class="comment-tooltip"></div>
+
+    <!-- Тулбар для створення коментаря при виділенні -->
+    <div id="comment-toolbar" class="comment-toolbar">
+        <button id="btn-trigger-comment" class="toolbar-action-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            + Коментар
+        </button>
+        <div id="comment-add-box" class="comment-add-box">
+            <input type="text" id="comment-add-input" class="comment-add-input" placeholder="Текст коментаря..." autocomplete="off">
+            <button id="btn-confirm-add" class="btn-confirm-add">OK</button>
+        </div>
+    </div>
+
+    <!-- Попап для редагування/видалення коментаря при кліку -->
+    <div id="comment-popover" class="comment-popover">
+        <textarea id="comment-popover-text" placeholder="Редагувати коментар..."></textarea>
+        <div class="popover-buttons">
+            <button id="btn-popover-delete" class="btn-popover-delete">Видалити</button>
+            <button id="btn-popover-save" class="btn-popover-save">Зберегти</button>
+        </div>
+    </div>
+
     <!-- Лічильник слів -->
     <div id="counter" class="counter ui-element">0 слів</div>
 
@@ -735,6 +1004,21 @@
         const notesToggleBtn = document.getElementById('toggle-notes-btn');
         const appLayout = document.getElementById('app-layout');
 
+        // Елементи інтерфейсу коментарів
+        const commentTooltip = document.getElementById('comment-tooltip');
+        const commentToolbar = document.getElementById('comment-toolbar');
+        const btnTriggerComment = document.getElementById('btn-trigger-comment');
+        const commentAddBox = document.getElementById('comment-add-box');
+        const commentAddInput = document.getElementById('comment-add-input');
+        const btnConfirmAdd = document.getElementById('btn-confirm-add');
+        const commentPopover = document.getElementById('comment-popover');
+        const commentPopoverText = document.getElementById('comment-popover-text');
+        const btnPopoverSave = document.getElementById('btn-popover-save');
+        const btnPopoverDelete = document.getElementById('btn-popover-delete');
+
+        let savedCommentRange = null;
+        let activeEditingSpan = null;
+
         // Ключі збереження у localStorage
         const STORAGE_DRAFTS_KEY = 'tg_editor_drafts';
         const STORAGE_ACTIVE_ID_KEY = 'tg_editor_active_id';
@@ -744,9 +1028,17 @@
         let drafts = [];
         let activeDraftId = null;
 
-        // По дефолту приховано (якщо користувач не розгортав раніше)
         let isSidebarCollapsed = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED_KEY) !== 'false';
         let isNotesCollapsed = localStorage.getItem(STORAGE_NOTES_COLLAPSED_KEY) !== 'false';
+
+        // === РЕЄСТРАЦІЯ PWA SERVICE WORKER ===
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('SW registration failed:', err);
+                });
+            });
+        }
 
         // === УПРАВЛІННЯ ЛІВИМ САЙДБАРОМ ===
         function updateSidebarUI() {
@@ -765,7 +1057,7 @@
             updateSidebarUI();
         }
 
-        // === УПРАВЛІННЯ ПРАВИМ САЙДБАРОМ (НОТАТКИ) ===
+        // === УПРАВЛІННЯ ПРАВИМ САЙДБАРОМ ===
         function updateNotesUI() {
             if (isNotesCollapsed) {
                 appLayout.classList.add('notes-collapsed');
@@ -782,13 +1074,12 @@
             updateNotesUI();
         }
 
-        // === АВТО-РОЗШИРЕННЯ ЗАГОЛОВКА (TEXTAREA) ===
         function autoResizeTitle() {
             titleInput.style.height = 'auto';
             titleInput.style.height = Math.max(58, titleInput.scrollHeight) + 'px';
         }
 
-        // === МЕНЕДЖЕР ЧЕРНЕТОК (LOCALSTORAGE) ===
+        // === МЕНЕДЖЕР ЧЕРНЕТОК ===
         function createNewDraftObject() {
             return {
                 id: 'draft_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
@@ -813,7 +1104,6 @@
                 drafts = [createNewDraftObject()];
             }
 
-            // Забезпечуємо наявність поля нотаток у завантажених чернетках
             drafts.forEach(d => {
                 if (d.notes === undefined) d.notes = '';
             });
@@ -905,6 +1195,7 @@
             bodyDiv.innerHTML = draft.bodyHTML || '';
             notesInput.value = draft.notes || '';
 
+            closeAllCommentModals();
             autoResizeTitle();
             updateCounter();
             renderSidebar();
@@ -923,6 +1214,7 @@
             bodyDiv.innerHTML = '';
             notesInput.value = '';
 
+            closeAllCommentModals();
             autoResizeTitle();
             updateCounter();
             renderSidebar();
@@ -972,6 +1264,210 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        // ==========================================
+        // === ЛОГІКА КОМЕНТАРІВ (UI ТА ВЗАЄМОДІЯ) ===
+        // ==========================================
+
+        // 1. Обробка виділення тексту
+        function handleSelection() {
+            const selection = window.getSelection();
+            if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+                if (!commentAddBox.classList.contains('active')) {
+                    hideCommentToolbar();
+                }
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+            if (!bodyDiv.contains(range.commonAncestorContainer)) {
+                hideCommentToolbar();
+                return;
+            }
+
+            savedCommentRange = range.cloneRange();
+            const rect = range.getBoundingClientRect();
+
+            btnTriggerComment.style.display = 'flex';
+            commentAddBox.classList.remove('active');
+            commentToolbar.classList.add('active');
+            positionPopup(commentToolbar, rect, -42);
+        }
+
+        bodyDiv.addEventListener('mouseup', handleSelection);
+        bodyDiv.addEventListener('keyup', (e) => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Shift'].includes(e.key)) {
+                handleSelection();
+            }
+        });
+
+        // Клік по кнопці "+ Коментар"
+        btnTriggerComment.addEventListener('click', (e) => {
+            e.stopPropagation();
+            btnTriggerComment.style.display = 'none';
+            commentAddBox.classList.add('active');
+            commentAddInput.value = '';
+            commentAddInput.focus();
+        });
+
+        // Підтвердження створення коментаря
+        function applyComment() {
+            const text = commentAddInput.value.trim();
+            if (!text || !savedCommentRange) {
+                hideCommentToolbar();
+                return;
+            }
+
+            const span = document.createElement('span');
+            span.className = 'has-comment';
+            span.setAttribute('data-comment', text);
+
+            try {
+                savedCommentRange.surroundContents(span);
+            } catch (err) {
+                const fragment = savedCommentRange.extractContents();
+                span.appendChild(fragment);
+                savedCommentRange.insertNode(span);
+            }
+
+            window.getSelection().removeAllRanges();
+            hideCommentToolbar();
+            updateCurrentDraftData();
+            renderSidebar();
+        }
+
+        btnConfirmAdd.addEventListener('click', applyComment);
+        commentAddInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') applyComment();
+            if (e.key === 'Escape') hideCommentToolbar();
+        });
+
+        function hideCommentToolbar() {
+            commentToolbar.classList.remove('active');
+            commentAddBox.classList.remove('active');
+            savedCommentRange = null;
+        }
+
+        // 2. Плавний тултіп при наведенні (Hover)
+        bodyDiv.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('.has-comment');
+            if (target && (!e.relatedTarget || !target.contains(e.relatedTarget)) && !activeEditingSpan) {
+                const comment = target.getAttribute('data-comment');
+                if (!comment) return;
+
+                commentTooltip.textContent = comment;
+                commentTooltip.classList.add('visible');
+
+                const rect = target.getBoundingClientRect();
+                const tipRect = commentTooltip.getBoundingClientRect();
+
+                let top = rect.top - tipRect.height - 8;
+                if (top < 10) top = rect.bottom + 8;
+
+                let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+                left = Math.max(12, Math.min(window.innerWidth - tipRect.width - 12, left));
+
+                commentTooltip.style.top = `${top}px`;
+                commentTooltip.style.left = `${left}px`;
+            }
+        });
+
+        bodyDiv.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('.has-comment');
+            if (target && (!e.relatedTarget || !target.contains(e.relatedTarget))) {
+                commentTooltip.classList.remove('visible');
+            }
+        });
+
+        // 3. Клік по коментарю -> Редагування
+        bodyDiv.addEventListener('click', (e) => {
+            const target = e.target.closest('.has-comment');
+            if (!target) return;
+
+            e.preventDefault();
+            commentTooltip.classList.remove('visible');
+            hideCommentToolbar();
+
+            activeEditingSpan = target;
+            commentPopoverText.value = target.getAttribute('data-comment') || '';
+            commentPopover.classList.add('active');
+
+            const rect = target.getBoundingClientRect();
+            positionPopup(commentPopover, rect, 10);
+            setTimeout(() => commentPopoverText.focus(), 30);
+        });
+
+        // Збереження відредагованого коментаря
+        btnPopoverSave.addEventListener('click', () => {
+            if (!activeEditingSpan) return;
+            const text = commentPopoverText.value.trim();
+            if (text) {
+                activeEditingSpan.setAttribute('data-comment', text);
+            } else {
+                unwrapComment(activeEditingSpan);
+            }
+            updateCurrentDraftData();
+            closeCommentPopover();
+        });
+
+        // Видалення коментаря
+        btnPopoverDelete.addEventListener('click', () => {
+            if (activeEditingSpan) {
+                unwrapComment(activeEditingSpan);
+                updateCurrentDraftData();
+            }
+            closeCommentPopover();
+        });
+
+        function unwrapComment(span) {
+            const parent = span.parentNode;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+            parent.normalize();
+        }
+
+        function closeCommentPopover() {
+            commentPopover.classList.remove('active');
+            activeEditingSpan = null;
+        }
+
+        function closeAllCommentModals() {
+            hideCommentToolbar();
+            closeCommentPopover();
+            commentTooltip.classList.remove('visible');
+        }
+
+        // Позиціонування плаваючих блоків
+        function positionPopup(el, targetRect, yOffset) {
+            const elRect = el.getBoundingClientRect();
+            let top = targetRect.top + yOffset;
+            if (yOffset < 0 && top < 10) {
+                top = targetRect.bottom + 10;
+            }
+            let left = targetRect.left + (targetRect.width / 2) - (elRect.width / 2);
+            left = Math.max(14, Math.min(window.innerWidth - elRect.width - 14, left));
+
+            el.style.top = `${top}px`;
+            el.style.left = `${left}px`;
+        }
+
+        // Закриття кліком ззовні
+        document.addEventListener('mousedown', (e) => {
+            if (!commentPopover.contains(e.target) && !e.target.closest('.has-comment')) {
+                closeCommentPopover();
+            }
+            if (!commentToolbar.contains(e.target) && !bodyDiv.contains(e.target)) {
+                hideCommentToolbar();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAllCommentModals();
+            }
+        });
+
         // === ІНІЦІАЛІЗАЦІЯ ПРИ ЗАВАНТАЖЕННІ ===
         document.addEventListener('DOMContentLoaded', () => {
             loadDraftsFromStorage();
@@ -988,7 +1484,6 @@
             updateCounter();
         });
 
-        // Слухачі оновлення тексту
         titleInput.addEventListener('input', () => {
             autoResizeTitle();
             updateCurrentDraftData();
@@ -1044,19 +1539,48 @@
             }
         });
 
-        // === КОНВЕРТАЦІЯ ТА РОЗБИТТЯ НА ЧАСТИНИ ===
+        // =========================================================================
+        // === КОНВЕРТАЦІЯ В TELEGRAM З КНИЖКОВИМИ ВИНОСКАМИ (ВЕРХНІ ІНДЕКСИ) ===
+        // =========================================================================
+
+        // Конвертер числа в верхній індекс (Юнікод степені: ¹, ², ³, ...)
+        function toSuperscript(num) {
+            const supers = {
+                '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+                '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
+            };
+            return String(num).split('').map(ch => supers[ch] || ch).join('');
+        }
+
         function convertToTelegramChunks(title, bodyHTML) {
             const temp = document.createElement('div');
             temp.innerHTML = bodyHTML;
 
             const escapeHTMLFunc = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+            const footnotes = [];
+            let footnoteIndex = 0;
+
             function serialize(node) {
                 if (node.nodeType === Node.TEXT_NODE) {
-                    return node.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return escapeHTMLFunc(node.nodeValue);
                 }
                 if (node.nodeType !== Node.ELEMENT_NODE) {
                     return '';
+                }
+
+                // Перевірка на коментар
+                if (node.classList && node.classList.contains('has-comment')) {
+                    footnoteIndex++;
+                    const commentText = node.getAttribute('data-comment') || '';
+                    footnotes.push({
+                        number: footnoteIndex,
+                        text: commentText
+                    });
+
+                    // Рекурсивно обробляємо дітей і додаємо верхній індекс
+                    const inner = Array.from(node.childNodes).map(serialize).join('');
+                    return `${inner}${toSuperscript(footnoteIndex)}`;
                 }
 
                 const tagName = node.tagName.toLowerCase();
@@ -1080,6 +1604,12 @@
             const paragraphs = Array.from(temp.childNodes)
                 .map(node => serialize(node).trim())
                 .filter(p => p.length > 0);
+
+            // Якщо є коментарі, формуємо блок виносок унизу
+            if (footnotes.length > 0) {
+                const footnotesBlock = '——\n' + footnotes.map(fn => `${toSuperscript(fn.number)} ${escapeHTMLFunc(fn.text)}`).join('\n');
+                paragraphs.push(footnotesBlock);
+            }
 
             const chunks = [];
             let currentChunk = '';
